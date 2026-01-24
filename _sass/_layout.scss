@@ -7,8 +7,8 @@
 // ===================
 
 header {
-    background: linear-gradient(135deg, #3d2c29 0%, #2a1f1a 100%); /* Fixed dark - matches marquee */
-    border-bottom: 1px solid #4a3d38; /* Fixed dark border */
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
     padding: 1rem 1.5rem;
     display: flex;
     justify-content: space-between;
@@ -16,6 +16,7 @@ header {
     position: sticky;
     top: 0;
     z-index: 100;
+    box-shadow: 0 1px 3px var(--shadow);
 }
 
 header h1 {
@@ -26,12 +27,12 @@ header h1 {
 }
 
 header h1 a {
-    color: #f5f0eb; /* Fixed light text - stays same in all themes */
+    color: var(--text);
     text-decoration: none;
 }
 
 header h1 a:hover {
-    color: #cc785c; /* Fixed accent - matches marquee */
+    color: var(--accent);
 }
 
 nav {
@@ -40,7 +41,7 @@ nav {
 }
 
 nav a {
-    color: rgba(245, 240, 235, 0.8); /* Fixed light text, slightly muted */
+    color: var(--text-muted);
     text-decoration: none;
     font-family: system-ui, sans-serif;
     font-size: 0.85rem;
@@ -50,8 +51,8 @@ nav a {
 }
 
 nav a:hover {
-    color: #f5f0eb; /* Fixed light text - full opacity on hover */
-    background: rgba(255, 255, 255, 0.1); /* Subtle light overlay */
+    color: var(--accent);
+    background: var(--bg-alt);
 }
 
 // Mobile: Compact header
@@ -81,10 +82,11 @@ nav a:hover {
 main {
     max-width: 750px;
     margin: 0 auto;
-    padding: 2.5rem 1.5rem;
+    padding: 1.5rem 1.5rem;
 }
 
-main:has(.hero) {
+main:has(.hero),
+main:has(.wiki-section) {
     max-width: none;
     padding: 0;
 }
@@ -92,7 +94,7 @@ main:has(.hero) {
 // Mobile: Tighter padding
 @media (max-width: 600px) {
     main {
-        padding: 1.5rem 1rem;
+        padding: 1rem 1rem;
     }
 }
 

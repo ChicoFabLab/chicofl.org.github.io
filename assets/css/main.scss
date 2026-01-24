@@ -52,16 +52,16 @@
 // FEATURES
 // ===========================================
 @import "features/wiki";
-@import "features/opportunities";
+// @import "features/opportunities";  // REMOVED - opportunities section deleted
 @import "features/search";
 @import "features/marquee";
 @import "features/toc";
-@import "features/fun-buttons";
+// @import "features/fun-buttons";  // REMOVED - easter egg features deleted
 @import "features/loaders";
-@import "features/achievements";
-@import "features/eldritch";
+// @import "features/achievements";  // REMOVED - achievement system deleted
+// @import "features/eldritch";  // REMOVED - void/eldritch theme deleted
 @import "features/showcase";
-@import "features/fab-bar";
+// @import "features/fab-bar";  // REMOVED - FAB bar with achievements deleted
 @import "features/mobile-nav";
 
 // ===========================================

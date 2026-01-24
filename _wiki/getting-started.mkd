@@ -39,8 +39,6 @@ New to CFL? This page is the launchpad and living reference for tours, tools, an
 
 <div class="showcase-row">
 {% include components/button.html text="Join Discord" variant="primary" icon="💬" href="https://discord.gg/chicofablab" %}
-{% include components/button.html text="Equipment Guide" variant="secondary" icon="🛠️" href="/wiki/equipment-guide" %}
-{% include components/button.html text="Lab Status" variant="ghost" icon="📊" href="/wiki/lab-status" %}
 </div>
 
 ## Safety and Certification
@@ -84,12 +82,7 @@ We share knowledge openly and help each other build better. Whether you are bran
 ## Contribute to This Page
 This is a living reference page. Add your zone, events, and tips so newcomers can find what they need.
 
-{% include components/callout.html variant="tip" icon="🧩" title="Use the Component Library" body="Developers can keep pages consistent by using our UI components. Start with the live gallery and API reference for copy-paste examples." cta_url="/wiki/component-showcase" cta_label="Component Showcase" %}
-
-<div class="showcase-row">
-{% include components/button.html text="API Reference" variant="secondary" icon="📚" href="/wiki/api-reference" %}
-{% include components/button.html text="How to Contribute" variant="ghost" icon="💻" href="/README" %}
-</div>
+{% include components/callout.html variant="tip" icon="💻" title="Contribute to this Page" body="Help improve this documentation by submitting a pull request on GitHub." cta_url="https://github.com/ChicoFabLab/chicofablab.github.io" cta_label="View on GitHub" %}
 
 ## What to Bring
 - A project idea (or just curiosity)
@@ -97,8 +90,6 @@ This is a living reference page. Add your zone, events, and tips so newcomers ca
 - Closed-toe shoes for shop areas
 
 ## Resources
-- Equipment guide: [Equipment Guide]({{ site.baseurl }}/wiki/equipment-guide)
-- Lab status: [Lab Status Dashboard]({{ site.baseurl }}/wiki/lab-status)
 - Task dashboard project: [tasksdashboard](https://github.com/ChicoFabLab/tasksdashboard)
 - Kiosk notes: [CFL Kiosk]({{ site.baseurl }}/wiki/cfl-kiosk)
 - Main site repo: [chicofablab.github.io](https://github.com/ChicoFabLab/chicofablab.github.io)

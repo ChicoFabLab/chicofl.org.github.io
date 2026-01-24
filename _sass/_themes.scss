@@ -2,24 +2,24 @@
 // Dark/Light Mode Themes
 // ===================
 
-/* Dark mode theme */
+/* Dark mode theme (optional, user can toggle) */
 [data-theme="dark"] {
-    --bg: #1a1614;
-    --bg-alt: #252220;
-    --surface: #2a2624;
-    --text: #f5f0eb;
-    --text-muted: #a89c94;
-    --accent: #ff6b6b;
-    --accent-hover: #ff5252;
-    --accent-secondary: #4ecdc4;
-    --accent-secondary-hover: #3dbdb5;
-    --border: #3a3532;
-    --border-dark: #4a4540;
-    --code-bg: #2a2624;
+    --bg: #1a1a1a;
+    --bg-alt: #242424;
+    --surface: #2a2a2a;
+    --text: #e0e0e0;
+    --text-muted: #999999;
+    --accent: #3399ff;
+    --accent-hover: #66b3ff;
+    --accent-secondary: #00d9c0;
+    --accent-secondary-hover: #00f0d7;
+    --border: #3a3a3a;
+    --border-dark: #4a4a4a;
+    --code-bg: #2a2a2a;
     --shadow: rgba(0, 0, 0, 0.3);
-    --info: #4ecdc4;
-    --info-bg: #1a2a29;
-    --info-border: #2a4a48;
+    --info: #3399ff;
+    --info-bg: #1a2733;
+    --info-border: #2a4a66;
     --success: #4ade80;
     --success-bg: #1a2a1f;
     --success-border: #2a4a35;
@@ -31,62 +31,39 @@
     --danger-border: #4a2a2a;
 }
 
-/* Explicit light mode (overrides system dark preference) */
-[data-theme="light"] {
-    --bg: #fef9f3;
-    --bg-alt: #f8edd8;
-    --surface: #fffcf8;
-    --text: #2a1f1a;
-    --text-muted: #6b5c52;
-    --accent: #e63946;
-    --accent-hover: #c62d3a;
-    --accent-secondary: #038592;
-    --accent-secondary-hover: #026d78;
-    --border: #e8dcc8;
-    --border-dark: #d4c4a8;
-    --code-bg: #f8f0e6;
-    --shadow: rgba(42, 31, 26, 0.1);
-    --info: #038592;
-    --info-bg: #e8f4f5;
-    --info-border: #b0d8dc;
-    --success: #2d9d5a;
-    --success-bg: #eef8f0;
-    --success-border: #a8dbb8;
-    --warning: #e6940a;
-    --warning-bg: #fef8ec;
-    --warning-border: #f5d88a;
-    --danger: #e63946;
+/* Explicit light mode (default and preferred) */
+[data-theme="light"],
+:root:not([data-theme]) {
+    --bg: #ffffff;
+    --bg-alt: #f7f9fc;
+    --surface: #ffffff;
+    --text: #1a1a1a;
+    --text-muted: #6b7280;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-secondary: #0ea5e9;
+    --accent-secondary-hover: #0284c7;
+    --border: #e5e7eb;
+    --border-dark: #d1d5db;
+    --code-bg: #f8fafc;
+    --shadow: rgba(37, 99, 235, 0.1);
+    --info: #0ea5e9;
+    --info-bg: #f0f9ff;
+    --info-border: #bae6fd;
+    --success: #10b981;
+    --success-bg: #f0fdf4;
+    --success-border: #bbf7d0;
+    --warning: #f59e0b;
+    --warning-bg: #fffbeb;
+    --warning-border: #fde68a;
+    --danger: #ef4444;
     --danger-bg: #fef2f2;
-    --danger-border: #f8c4c8;
+    --danger-border: #fecaca;
 }
 
-/* Respect system preference ONLY if no explicit theme set */
+/* Respect system preference only for dark mode */
 @media (prefers-color-scheme: dark) {
-    :root:not([data-theme]) {
-        --bg: #1a1614;
-        --bg-alt: #252220;
-        --surface: #2a2624;
-        --text: #f5f0eb;
-        --text-muted: #a89c94;
-        --accent: #ff6b6b;
-        --accent-hover: #ff5252;
-        --accent-secondary: #4ecdc4;
-        --accent-secondary-hover: #3dbdb5;
-        --border: #3a3532;
-        --border-dark: #4a4540;
-        --code-bg: #2a2624;
-        --shadow: rgba(0, 0, 0, 0.3);
-        --info: #4ecdc4;
-        --info-bg: #1a2a29;
-        --info-border: #2a4a48;
-        --success: #4ade80;
-        --success-bg: #1a2a1f;
-        --success-border: #2a4a35;
-        --warning: #fbbf24;
-        --warning-bg: #2a2515;
-        --warning-border: #4a4020;
-        --danger: #ff6b6b;
-        --danger-bg: #2a1a1a;
-        --danger-border: #4a2a2a;
+    :root:not([data-theme="light"]):not([data-theme="dark"]) {
+        /* System dark mode is available but light is default */
     }
 }

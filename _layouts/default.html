@@ -68,7 +68,6 @@
         </div>
     </div>
 
-    {% include marquee.html %}
 
     <header>
         <button type="button" class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
@@ -85,13 +84,6 @@
         <h1><a href="{{ site.baseurl }}/">CFL Wiki</a></h1>
         <nav id="main-nav">
             {% include nav.html type="main" %}
-        </nav>
-        <button type="button" class="cfl-nav-settings" id="cfl-nav-settings-btn" aria-label="Site settings" title="Site settings">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-            </button>
         </nav>
     </header>
 
@@ -155,130 +147,10 @@
                 {% include nav.html type="footer" %}
             </div>
             <p>Chico Fab Lab · 603 Orange Street · Chico, CA</p>
-            <p>Open Wednesdays 5-7pm and by arrangement</p>
-            <span class="footer-badge">Built with Jekyll · Hosted on GitHub Pages</span>
-            <a href="{{ site.baseurl }}/wiki/pong" class="footer-pong-link" id="pong-easter-egg" title="Play Pong!">🏓 Play Pong</a>
         </div>
     </footer>
 
     {% include privacy-disclaimer.html %}
-
-    <div class="cfl-settings" id="cfl-settings" aria-live="polite">
-        <div class="cfl-settings__scrim" data-scrim hidden></div>
-        <button type="button" class="cfl-settings__dismiss" id="cfl-settings-dismiss" aria-label="Hide settings button" title="Hide settings widget">
-            ✕
-        </button>
-        <button type="button" class="cfl-settings__fab" aria-expanded="false" aria-controls="cfl-settings-panel" aria-label="Site settings">
-            <span class="cfl-settings__fab-icon" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-            </span>
-        </button>
-        <div class="cfl-settings__orbit" aria-hidden="true">
-            <button type="button" class="cfl-settings__orbit-btn" data-panel="fonts" title="Fonts">
-                <span aria-hidden="true">Aa</span>
-                <span class="sr-only">Fonts</span>
-                <span class="cfl-settings__orbit-label">Fonts</span>
-            </button>
-            <button type="button" class="cfl-settings__orbit-btn" data-panel="colors" title="Colors">
-                <span aria-hidden="true">🎨</span>
-                <span class="sr-only">Colors</span>
-                <span class="cfl-settings__orbit-label">Colors</span>
-            </button>
-            <button type="button" class="cfl-settings__orbit-btn" data-action="quick-font" data-font="fraunces" title="Soft serif">
-                <span aria-hidden="true">🫧</span>
-                <span class="sr-only">Soft serif</span>
-                <span class="cfl-settings__orbit-label">Serif</span>
-            </button>
-            <button type="button" class="cfl-settings__orbit-btn" data-action="quick-font" data-font="bricolage" title="Playful sans">
-                <span aria-hidden="true">✨</span>
-                <span class="sr-only">Playful sans</span>
-                <span class="cfl-settings__orbit-label">Sans</span>
-            </button>
-            <button type="button" class="cfl-settings__orbit-btn" data-panel="scope" title="Scope">
-                <span aria-hidden="true">🌐</span>
-                <span class="sr-only">Scope</span>
-                <span class="cfl-settings__orbit-label">Scope</span>
-            </button>
-            <button type="button" class="cfl-settings__orbit-btn" data-panel="reset" title="Reset">
-                <span aria-hidden="true">↺</span>
-                <span class="sr-only">Reset</span>
-                <span class="cfl-settings__orbit-label">Reset</span>
-            </button>
-        </div>
-
-        <div class="cfl-settings__panel" id="cfl-settings-panel" data-panel="fonts" hidden>
-            <div class="cfl-settings__panel-title">Font switcher</div>
-            <label class="cfl-settings__label" for="cfl-font-select">Pick a style</label>
-            <select id="cfl-font-select" class="cfl-settings__select">
-                <option value="default">Default (Georgia + Inter)</option>
-                <option value="fraunces">Fraunces (soft serif)</option>
-                <option value="caprasimo">Caprasimo (bold & bubbly)</option>
-                <option value="chonburi">Chonburi (retro serif)</option>
-                <option value="dm-serif">DM Serif Display (editorial)</option>
-                <option value="abril">Abril Fatface (dramatic)</option>
-                <option value="bricolage">Bricolage Grotesque (playful sans)</option>
-                <option value="calistoga">Calistoga (friendly retro)</option>
-                <option value="varela">Varela Round (soft sans)</option>
-                <option value="fredoka">Fredoka (bold rounded)</option>
-                <option value="nunito">Nunito (rounded UI)</option>
-            </select>
-            <p class="cfl-settings__note">Headings and body will update instantly. Defaults remain Georgia/Inter if you reset.</p>
-        </div>
-
-        <div class="cfl-settings__panel" data-panel="colors" hidden>
-            <div class="cfl-settings__panel-title">Color theme</div>
-            <p class="cfl-settings__note">Pick an accent vibe. Applies to this device only.</p>
-            <div class="cfl-settings__swatches" role="group" aria-label="Color themes">
-                <button type="button" class="cfl-settings__swatch" data-theme="default">
-                    <span class="cfl-settings__swatch-dot" style="--swatch-accent: #e63946; --swatch-bg: #fef9f3;"></span>
-                    Default
-                </button>
-                <button type="button" class="cfl-settings__swatch" data-theme="teal">
-                    <span class="cfl-settings__swatch-dot" style="--swatch-accent: #0f766e; --swatch-bg: #f0fdfa;"></span>
-                    Teal
-                </button>
-                <button type="button" class="cfl-settings__swatch" data-theme="amber">
-                    <span class="cfl-settings__swatch-dot" style="--swatch-accent: #d97706; --swatch-bg: #fffbeb;"></span>
-                    Amber
-                </button>
-                <button type="button" class="cfl-settings__swatch" data-theme="plum">
-                    <span class="cfl-settings__swatch-dot" style="--swatch-accent: #9333ea; --swatch-bg: #f5f3ff;"></span>
-                    Plum
-                </button>
-            </div>
-            <div class="cfl-settings__legal">Colors are applied with CSS variables only; nothing is sent or stored remotely.</div>
-        </div>
-
-        <div class="cfl-settings__panel" data-panel="scope" hidden>
-            <div class="cfl-settings__panel-title">Scope</div>
-            <label class="cfl-settings__label">Apply where?</label>
-            <label class="cfl-toggle cfl-toggle--md cfl-settings__scope-toggle">
-                <input type="checkbox" class="cfl-toggle__input" id="cfl-settings-scope">
-                <span class="cfl-toggle__track">
-                    <span class="cfl-toggle__thumb"></span>
-                </span>
-                <span class="cfl-toggle__label">Site-wide (this device)</span>
-            </label>
-            <p class="cfl-settings__note">Switch off for “This page only” (clears when you leave). Switch on for “Site-wide” (saves to this browser only).</p>
-            <div class="cfl-settings__legal">Settings stay local on your device (localStorage/sessionStorage). Fonts load from Google Fonts. No tracking or cookies.</div>
-        </div>
-
-        <div class="cfl-settings__panel" data-panel="reset" hidden>
-            <div class="cfl-settings__panel-title">Reset & debug</div>
-            <button type="button" class="cfl-btn cfl-btn--ghost cfl-btn--sm cfl-settings__reset" data-action="reset-scope">Reset current scope</button>
-            <label class="cfl-toggle cfl-toggle--sm cfl-settings__debug-toggle">
-                <input type="checkbox" class="cfl-toggle__input" id="cfl-settings-debug" checked>
-                <span class="cfl-toggle__track">
-                    <span class="cfl-toggle__thumb"></span>
-                </span>
-                <span class="cfl-toggle__label">Debug logging</span>
-            </label>
-            <p class="cfl-settings__note">Debug logs print to the console to help troubleshoot font changes and persistence.</p>
-        </div>
-    </div>
 
     <script src="{{ site.baseurl }}/assets/js/fonts.js" defer></script>
     <script src="{{ site.baseurl }}/assets/js/main.js" defer></script>
