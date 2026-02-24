@@ -50,11 +50,11 @@
             font-weight: bold;
             cursor: pointer;
             transition: background-color 0.2s;
+            margin-bottom: 10px;
         }
         .btn-open {
             background-color: #28a745;
             color: white;
-            margin-bottom: 10px;
         }
         .btn-open:hover {
             background-color: #218838;
@@ -65,6 +65,13 @@
         }
         .btn-save:hover {
             background-color: #0069d9;
+        }
+        .btn-install {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-install:hover {
+            background-color: #5a6268;
         }
         .status {
             margin-top: 15px;
@@ -82,6 +89,7 @@
         
         <button class="btn-open" onclick="openGate()">OPEN GATE</button>
         <button class="btn-save" onclick="saveCode()">Save Code Locally</button>
+        <button class="btn-install" id="downloadBtn" onclick="downloadWebApp()">Download WebApp</button>
         
         <div id="status" class="status"></div>
     </div>
@@ -102,6 +110,41 @@
 
     const codeInput = document.getElementById('accessCode');
     const statusDiv = document.getElementById('status');
+
+    const GITHUB_URL = 'https://raw.githubusercontent.com/ChicoFabLab/chicofl.org.github.io/refs/heads/main/WebApp.html';
+    const FILE_NAME = 'WebApp.html';
+
+    async function downloadWebApp() {
+        const btn = document.getElementById('downloadBtn');
+        
+        try {
+            btn.disabled = true;
+            statusDiv.innerText = "Fetching from GitHub...";
+            statusDiv.style.color = "#007bff";
+
+            const response = await fetch(GITHUB_URL);
+            if (!response.ok) throw new Error('Could not fetch file');
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = FILE_NAME;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            statusDiv.innerText = "Update downloaded!";
+            statusDiv.style.color = "#28a745";
+        } catch (err) {
+            statusDiv.innerText = "Error: " + err.message;
+            statusDiv.style.color = "#dc3545";
+            console.error(err);
+        } finally {
+            btn.disabled = false;
+        }
+    }
 
     // Load saved code on startup
     window.onload = () => {
