@@ -3,29 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maker Radio Marquee</title>
+<title>Maker Radio - Digital Marquee</title>
 <style>
+  /* Reset margins and set up a clean, full-screen viewport */
   body, html {
     margin: 0;
     padding: 0;
     height: 100%;
     overflow: hidden;
-    background-color: #000000; /* Black background matches the B&W flyer aesthetic */
+    background-color: #000000; /* Matte black background fits the B&W look */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
+
+  /* Flex container centered on the TV/signage screen */
   .flyer-container {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     width: 100vw;
+    background-color: #000000;
   }
+
+  /* Target resolution aspect ratio safety handles */
   img.flyer-image {
     max-height: 100%;
     max-width: 100%;
-    object-fit: contain; /* Keeps original 768x1024 aspect ratio without distortion */
-    transition: opacity 0.5s ease-in-out; /* Smooth fade transition between flyers */
+    object-fit: contain; /* Locks the 768x1024 layout ratio without distortion */
+    
+    /* Hardware-accelerated smooth transition profile */
+    transition: opacity 0.8s ease-in-out; 
     opacity: 1;
+    will-change: opacity;
   }
+
+  /* Invisible state handled cleanly during image swapping */
   .fade-out {
     opacity: 0;
   }
@@ -34,45 +46,51 @@
 <body>
 
   <div class="flyer-container">
-    <img id="signage-display" src="flyer1.png" alt="Digital Signage Flyer" class="flyer-image">
+    <!-- Initial fallback image targets the first entry in your media group -->
+    <img id="signage-display" src="flyer1.png" alt="Maker Radio Signage Event Flyer" class="flyer-image">
   </div>
 
 <script>
-  // --- CONFIGURATION ---
-  // 1. Add your filenames to this array. Order determines playback order.
+  // ==========================================
+  // --- SIGNAGE PLAYLIST CONFIGURATION -------
+  // ==========================================
+  // To expand: Simply add filenames to this list (e.g., "flyer3.png", "flyer4.png")
   const flyerPlaylist = [
-    "flyer1.png", // Run4Salmon Fundraiser
-    "flyer2.png"  // Maker Radio Live Music
+    "flyer1.png", // Run4Salmon Fundraiser (June 14)
+    "flyer2.png"  // Live Music Showcase (June 12)
   ];
 
-  // 2. Set the display duration per flyer (in milliseconds). 20000 ms = 20 seconds.
+  // Set the rotation delay per asset (in milliseconds). 20000ms = 20 seconds.
   const displayDuration = 20000; 
-  // ---------------------
+  // ==========================================
+
 
   let currentIndex = 0;
   const displayImg = document.getElementById("signage-display");
 
   function rotateFlyers() {
-    // 1. Start fade out
+    // 1. Initiate visual fade out
     displayImg.classList.add("fade-out");
 
-    // 2. Wait for fade-out animation (500ms) to finish, then swap source and fade back in
+    // 2. Safely cycle the asset source mid-transition while invisible
     setTimeout(() => {
-      // Move to next image, looping back to 0 if at the end of the array
+      // Loop seamlessly back to index 0 when arriving at the end of the array
       currentIndex = (currentIndex + 1) % flyerPlaylist.length;
       
       displayImg.src = flyerPlaylist[currentIndex];
       
-      // Remove fade class to reveal new image
+      // 3. Drop the utility class to fade the new asset back in
       displayImg.classList.remove("fade-out");
-    }, 500); 
+    }, 800); // 800ms matching timing flawlessly with the 0.8s CSS transition profile
   }
 
-  // Only start the interval if there is more than one flyer in the playlist
+  // Self-check guard: Only spin up the automation loop if multiple assets exist
   if (flyerPlaylist.length > 1) {
     setInterval(rotateFlyers, displayDuration);
   }
 </script>
 
+</body>
+</html>
 </body>
 </html>
