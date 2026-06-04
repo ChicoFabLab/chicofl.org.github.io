@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Run4Salmon Event Flyer</title>
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background-color: black; /* Optional: adds a background for aspect ratios that don't match */
+  }
+  .flyer-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+  }
+  img.flyer-image {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain; /* Ensures the whole flyer is visible without stretching */
+  }
+</style>
+</head>
+<body>
+  <div class="flyer-container">
+    <img src="flyer.png" alt="Run4Salmon Fundraiser Flyer" class="flyer-image">
+  </div>
+</body>
+</html>
