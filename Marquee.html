@@ -1,121 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maker Radio Marquee</title>
-    <style>
-        /* Force strict 768x1024 layout & hide browser artifacts */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html, body {
-            width: 768px;
-            height: 1024px;
-            overflow: hidden; /* Prevents accidental scrolling */
-            background-color: #ffffff; /* Dark background to prevent screen glare */
-            color: #1a1a1a;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            cursor: none; /* Hides mouse cursor for a clean kiosk look */
-        }
-
-        /* Main container matching target resolution */
-        .sign-container {
-            width: 768px;
-            height: 1024px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between; /* Pushes content to top, middle, bottom */
-            padding: 60px 40px; /* Generous breathing room for portrait screens */
-        }
-
-        /* Sign Layout Sections */
-        header {
-            text-align: center;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
-        }
-
-        header h1 {
-            font-size: 3rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #007a87; /* Accent color */
-        }
-
-        main {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-
-        .main-message {
-            font-size: 4.5rem;
-            font-weight: bold;
-            line-height: 1.2;
-            margin-bottom: 20px;
-        }
-
-        .sub-message {
-            font-size: 2rem;
-            color: #aaaaaa;
-        }
-
-        footer {
-            text-align: center;
-            border-top: 2px solid #333;
-            padding-top: 20px;
-        }
-
-        .clock {
-            font-size: 2.5rem;
-            font-weight: 300;
-            color: #eeeeee;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maker Radio Marquee</title>
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background-color: black; /* Optional: adds a background for aspect ratios that don't match */
+  }
+  .flyer-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+  }
+  img.flyer-image {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain; /* Ensures the whole flyer is visible without stretching */
+  }
+</style>
 </head>
 <body>
-
-    <div class="sign-container">
-        
-        <header>
-            <h1>Welcome</h1>
-        </header>
-
-        <main>
-            <div class="main-message">Digital Signage<br>Active</div>
-            <div class="sub-message">768 × 1024 Portrait Mode</div>
-        </main>
-
-        <footer>
-            <div id="display-clock" class="clock">00:00 PM</div>
-        </footer>
-
-    </div>
-
-    <script>
-        // Simple live clock script for the footer
-        function updateClock() {
-            const now = new Date();
-            let hours = now.getHours();
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            
-            hours = hours % 12;
-            hours = hours ? hours : 12; 
-            
-            document.getElementById('display-clock').textContent = `${hours}:${minutes} ${ampm}`;
-        }
-        
-        updateClock();
-        setInterval(updateClock, 1000);
-    </script>
-
+  <div class="flyer-container">
+    <img src="flyer2.png" alt="Run4Salmon Fundraiser Flyer" class="flyer-image">
+  </div>
 </body>
 </html>
