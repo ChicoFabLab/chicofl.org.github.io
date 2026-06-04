@@ -37,12 +37,12 @@
     will-change: opacity, transform;
   }
 
-  /* --- COOL TRANSITION STYLES --- */
+  /* --- TRANSITION STYLES --- */
   
   /* State 1: Active and visible */
   .active {
     opacity: 1;
-    transform: scale(1) rotate(0deg);
+    transform: scale(1);
     z-index: 2;
   }
 
@@ -65,11 +65,12 @@
   // ==========================================
   // --- SIGNAGE PLAYLIST CONFIGURATION -------
   // ==========================================
+  // Add as many flyers as you want here
   const flyerPlaylist = [
-    "flyer1.png", // Run4Salmon Fundraiser
-    "flyer2.png",  // Live Music Showcase
-    "flyer3.png",  // Maker Radio Wants You
-    "flyer4.png"  // crash carts
+    "flyer1.png", 
+    "flyer2.png",  
+    "flyer3.png",
+    "flyer4.png"
   ];
 
   // How long each flyer stays on screen (20000ms = 20 seconds)
@@ -80,40 +81,43 @@
   const layerA = document.getElementById("layerA");
   const layerB = document.getElementById("layerB");
   
-  // Track which layer is currently on top
   let isLayerAActive = true;
 
   function rotateFlyers() {
-    // 1. Calculate the next index
-    currentIndex = (currentIndex + 1) % flyerPlaylist.length;
+    // Check if we just finished showing the very last flyer in the playlist
+    if (currentIndex === flyerPlaylist.length - 1) {
+      // Force a reload from the server to pull down code or image updates
+      location.reload();
+      return; 
+    }
+
+    // Otherwise, move to the next image index
+    currentIndex++;
     const nextImageSrc = flyerPlaylist[currentIndex];
 
     if (isLayerAActive) {
-      // Layer A is showing. Prepare Layer B behind it, then fade Layer B in / Layer A out
       layerB.src = nextImageSrc;
-      
-      // Give the browser a split second to register the new source image
       setTimeout(() => {
         layerA.className = "flyer-layer hidden";
         layerB.className = "flyer-layer active";
       }, 50);
     } else {
-      // Layer B is showing. Prepare Layer A behind it, then fade Layer A in / Layer B out
       layerA.src = nextImageSrc;
-      
       setTimeout(() => {
         layerB.className = "flyer-layer hidden";
         layerA.className = "flyer-layer active";
       }, 50);
     }
 
-    // Toggle our layer tracker
     isLayerAActive = !isLayerAActive;
   }
 
-  // Pre-load the next image immediately if there are multiple images
+  // Fallback safety: If there is only 1 flyer, reload the page after the duration 
+  // to check if new files have been added to the playlist.
   if (flyerPlaylist.length > 1) {
     setInterval(rotateFlyers, displayDuration);
+  } else {
+    setTimeout(() => { location.reload(); }, displayDuration);
   }
 </script>
 
