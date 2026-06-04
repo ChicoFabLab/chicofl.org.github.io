@@ -5,92 +5,115 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Maker Radio - Digital Marquee</title>
 <style>
-  /* Reset margins and set up a clean, full-screen viewport */
   body, html {
     margin: 0;
     padding: 0;
     height: 100%;
     overflow: hidden;
-    background-color: #000000; /* Matte black background fits the B&W look */
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  }
-
-  /* Flex container centered on the TV/signage screen */
-  .flyer-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    width: 100vw;
     background-color: #000000;
   }
 
-  /* Target resolution aspect ratio safety handles */
-  img.flyer-image {
-    max-height: 100%;
-    max-width: 100%;
-    object-fit: contain; /* Locks the 768x1024 layout ratio without distortion */
-    
-    /* Hardware-accelerated smooth transition profile */
-    transition: opacity 0.8s ease-in-out; 
-    opacity: 1;
-    will-change: opacity;
+  /* The container sets the stage */
+  .signage-stage {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
-  /* Invisible state handled cleanly during image swapping */
-  .fade-out {
+  /* Both flyer layers sit perfectly on top of each other */
+  .flyer-layer {
+    position: absolute;
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    
+    /* Hardware-accelerated transitions for perfectly smooth motion */
+    transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: opacity, transform;
+  }
+
+  /* --- COOL TRANSITION STYLES --- */
+  
+  /* State 1: Active and visible */
+  .active {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    z-index: 2;
+  }
+
+  /* State 2: Hidden/Transitioned out (Cinematic Fade + Subtle Zoom Out) */
+  .hidden {
     opacity: 0;
+    transform: scale(0.95);
+    z-index: 1;
   }
 </style>
 </head>
 <body>
 
-  <div class="flyer-container">
-    <!-- Initial fallback image targets the first entry in your media group -->
-    <img id="signage-display" src="flyer1.png" alt="Maker Radio Signage Event Flyer" class="flyer-image">
+  <div class="signage-stage">
+    <img id="layerA" class="flyer-layer active" src="flyer1.png" alt="Signage Display">
+    <img id="layerB" class="flyer-layer hidden" src="flyer2.png" alt="Signage Display">
   </div>
 
 <script>
   // ==========================================
   // --- SIGNAGE PLAYLIST CONFIGURATION -------
   // ==========================================
-  // To expand: Simply add filenames to this list (e.g., "flyer3.png", "flyer4.png")
   const flyerPlaylist = [
-    "flyer1.png", // Run4Salmon Fundraiser (June 14)
-    "flyer2.png"  // Live Music Showcase (June 12)
+    "flyer1.png", // Run4Salmon Fundraiser
+    "flyer2.png"  // Live Music Showcase
   ];
 
-  // Set the rotation delay per asset (in milliseconds). 20000ms = 20 seconds.
+  // How long each flyer stays on screen (20000ms = 20 seconds)
   const displayDuration = 20000; 
   // ==========================================
 
-
   let currentIndex = 0;
-  const displayImg = document.getElementById("signage-display");
+  const layerA = document.getElementById("layerA");
+  const layerB = document.getElementById("layerB");
+  
+  // Track which layer is currently on top
+  let isLayerAActive = true;
 
   function rotateFlyers() {
-    // 1. Initiate visual fade out
-    displayImg.classList.add("fade-out");
+    // 1. Calculate the next index
+    currentIndex = (currentIndex + 1) % flyerPlaylist.length;
+    const nextImageSrc = flyerPlaylist[currentIndex];
 
-    // 2. Safely cycle the asset source mid-transition while invisible
-    setTimeout(() => {
-      // Loop seamlessly back to index 0 when arriving at the end of the array
-      currentIndex = (currentIndex + 1) % flyerPlaylist.length;
+    if (isLayerAActive) {
+      // Layer A is showing. Prepare Layer B behind it, then fade Layer B in / Layer A out
+      layerB.src = nextImageSrc;
       
-      displayImg.src = flyerPlaylist[currentIndex];
+      // Give the browser a split second to register the new source image
+      setTimeout(() => {
+        layerA.className = "flyer-layer hidden";
+        layerB.className = "flyer-layer active";
+      }, 50);
+    } else {
+      // Layer B is showing. Prepare Layer A behind it, then fade Layer A in / Layer B out
+      layerA.src = nextImageSrc;
       
-      // 3. Drop the utility class to fade the new asset back in
-      displayImg.classList.remove("fade-out");
-    }, 800); // 800ms matching timing flawlessly with the 0.8s CSS transition profile
+      setTimeout(() => {
+        layerB.className = "flyer-layer hidden";
+        layerA.className = "flyer-layer active";
+      }, 50);
+    }
+
+    // Toggle our layer tracker
+    isLayerAActive = !isLayerAActive;
   }
 
-  // Self-check guard: Only spin up the automation loop if multiple assets exist
+  // Pre-load the next image immediately if there are multiple images
   if (flyerPlaylist.length > 1) {
     setInterval(rotateFlyers, displayDuration);
   }
 </script>
 
-</body>
-</html>
 </body>
 </html>
