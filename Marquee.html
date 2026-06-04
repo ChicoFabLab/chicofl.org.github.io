@@ -10,7 +10,7 @@
     padding: 0;
     height: 100%;
     overflow: hidden;
-    background-color: black; /* Optional: adds a background for aspect ratios that don't match */
+    background-color: #000000; /* Black background matches the B&W flyer aesthetic */
   }
   .flyer-container {
     display: flex;
@@ -22,13 +22,57 @@
   img.flyer-image {
     max-height: 100%;
     max-width: 100%;
-    object-fit: contain; /* Ensures the whole flyer is visible without stretching */
+    object-fit: contain; /* Keeps original 768x1024 aspect ratio without distortion */
+    transition: opacity 0.5s ease-in-out; /* Smooth fade transition between flyers */
+    opacity: 1;
+  }
+  .fade-out {
+    opacity: 0;
   }
 </style>
 </head>
 <body>
+
   <div class="flyer-container">
-    <img src="flyer2.png" alt="Run4Salmon Fundraiser Flyer" class="flyer-image">
+    <img id="signage-display" src="flyer1.png" alt="Digital Signage Flyer" class="flyer-image">
   </div>
+
+<script>
+  // --- CONFIGURATION ---
+  // 1. Add your filenames to this array. Order determines playback order.
+  const flyerPlaylist = [
+    "flyer1.png", // Run4Salmon Fundraiser
+    "flyer2.png"  // Maker Radio Live Music
+  ];
+
+  // 2. Set the display duration per flyer (in milliseconds). 20000 ms = 20 seconds.
+  const displayDuration = 20000; 
+  // ---------------------
+
+  let currentIndex = 0;
+  const displayImg = document.getElementById("signage-display");
+
+  function rotateFlyers() {
+    // 1. Start fade out
+    displayImg.classList.add("fade-out");
+
+    // 2. Wait for fade-out animation (500ms) to finish, then swap source and fade back in
+    setTimeout(() => {
+      // Move to next image, looping back to 0 if at the end of the array
+      currentIndex = (currentIndex + 1) % flyerPlaylist.length;
+      
+      displayImg.src = flyerPlaylist[currentIndex];
+      
+      // Remove fade class to reveal new image
+      displayImg.classList.remove("fade-out");
+    }, 500); 
+  }
+
+  // Only start the interval if there is more than one flyer in the playlist
+  if (flyerPlaylist.length > 1) {
+    setInterval(rotateFlyers, displayDuration);
+  }
+</script>
+
 </body>
 </html>
