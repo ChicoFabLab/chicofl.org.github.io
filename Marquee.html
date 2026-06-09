@@ -87,8 +87,12 @@
   let isLayerAActive = true;
   let rotationInterval = null;
   const cachedImages = [];
+  
+  // Track network validation tokens to verify backend modifications accurately
+  let initialETag = null;
+  let initialLastModified = null;
 
-  // 1. IMMEDIATE PRE-CACHING
+  // 1. IMMEDIATE PRE-CACHING & INITIAL HEADERS CAPTURE
   function preCacheImages() {
     flyerPlaylist.forEach((src) => {
       const img = new Image();
@@ -96,13 +100,25 @@
       cachedImages.push(img);
     });
   }
+  
+  async function captureInitialFileTokens() {
+    try {
+      // Grab headers on initial boot so we have a reference point
+      const response = await fetch(window.location.href, { method: 'HEAD', cache: 'no-store' });
+      initialETag = response.headers.get('ETag');
+      initialLastModified = response.headers.get('Last-Modified');
+    } catch (e) {
+      console.error("Failed to capture initial file signatures", e);
+    }
+  }
+  
   preCacheImages();
+  captureInitialFileTokens();
 
   // 2. ROTATION LOGIC
   function rotateFlyers() {
     let loopResetOccurred = false;
 
-    // Determine the next index instantly
     if (currentIndex === flyerPlaylist.length - 1) {
       currentIndex = 0;
       loopResetOccurred = true;
@@ -112,7 +128,6 @@
 
     const nextImageSrc = flyerPlaylist[currentIndex];
 
-    // Execute the CSS swap instantly with zero network delay
     if (isLayerAActive) {
       layerB.src = nextImageSrc;
       setTimeout(() => {
@@ -129,28 +144,32 @@
 
     isLayerAActive = !isLayerAActive;
 
-    // If we just cycled back to the beginning, check for updates 
-    // *after* the transition animation has already safely fired.
+    // Check for real backend script updates safely after the slide is long done transitioning
     if (loopResetOccurred) {
       setTimeout(async () => {
         const updated = await checkForUpdates();
         if (updated) {
           location.reload();
         }
-      }, 2000); // 2 second delay ensures the 1.2s transition finishes beautifully first
+      }, 3000); 
     }
   }
 
-  // 3. SILENT CODE CHECK
+  // 3. RELIABLE UPDATE CHECK VIA HTTP HEADERS
   async function checkForUpdates() {
     try {
-      const response = await fetch(window.location.href, { cache: "no-store" });
+      // Use HEAD request to check headers without wasting bandwidth downloading the file text
+      const response = await fetch(window.location.href, { method: 'HEAD', cache: 'no-store' });
       if (!response.ok) return false;
       
-      const serverHtml = await response.text();
-      const currentHtml = document.documentElement.outerHTML;
+      const newETag = response.headers.get('ETag');
+      const newLastModified = response.headers.get('Last-Modified');
       
-      return serverHtml.length !== currentHtml.length;
+      // If either token exists and doesn't match our boot config, the file changed on disk
+      if (initialETag && newETag && initialETag !== newETag) return true;
+      if (initialLastModified && newLastModified && initialLastModified !== newLastModified) return true;
+      
+      return false;
     } catch (e) {
       console.error("Update check failed:", e);
       return false;
@@ -178,7 +197,6 @@
     resetTimer();
   });
 
-  // Start the sign engine
   startTimer();
 </script>
 
