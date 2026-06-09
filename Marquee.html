@@ -89,7 +89,6 @@
   const cachedImages = [];
 
   // 1. IMMEDIATE PRE-CACHING
-  // Loads all playlist images into browser memory right away
   function preCacheImages() {
     flyerPlaylist.forEach((src) => {
       const img = new Image();
@@ -100,24 +99,20 @@
   preCacheImages();
 
   // 2. ROTATION LOGIC
-  async function rotateFlyers() {
-    // Check if we are currently looking at the very last flyer
+  function rotateFlyers() {
+    let loopResetOccurred = false;
+
+    // Determine the next index instantly
     if (currentIndex === flyerPlaylist.length - 1) {
-      const updated = await checkForUpdates();
-      if (updated) {
-        // Code changed! Force reload from server to pick up new images/assets
-        location.reload();
-        return; 
-      } else {
-        // No changes found. Reset index to loop cleanly back to the first frame
-        currentIndex = 0;
-      }
+      currentIndex = 0;
+      loopResetOccurred = true;
     } else {
       currentIndex++;
     }
 
     const nextImageSrc = flyerPlaylist[currentIndex];
 
+    // Execute the CSS swap instantly with zero network delay
     if (isLayerAActive) {
       layerB.src = nextImageSrc;
       setTimeout(() => {
@@ -133,27 +128,32 @@
     }
 
     isLayerAActive = !isLayerAActive;
+
+    // If we just cycled back to the beginning, check for updates 
+    // *after* the transition animation has already safely fired.
+    if (loopResetOccurred) {
+      setTimeout(async () => {
+        const updated = await checkForUpdates();
+        if (updated) {
+          location.reload();
+        }
+      }, 2000); // 2 second delay ensures the 1.2s transition finishes beautifully first
+    }
   }
 
-  // 3. SILENT CODES/PLAYLIST CHECK
-  // Fetches index.html behind the scenes to see if the file contents have shifted
+  // 3. SILENT CODE CHECK
   async function checkForUpdates() {
     try {
-      // Append a random cache-buster timestamp so the browser doesn't give us a stale file
       const response = await fetch(window.location.href, { cache: "no-store" });
       if (!response.ok) return false;
       
       const serverHtml = await response.text();
-      
-      // Store current DOM HTML string for comparison
       const currentHtml = document.documentElement.outerHTML;
       
-      // We look strictly at structural lengths or hash differences. 
-      // If length shifts significantly, something was modified.
       return serverHtml.length !== currentHtml.length;
     } catch (e) {
       console.error("Update check failed:", e);
-      return false; // Fail gracefully and just keep looping seamlessly
+      return false;
     }
   }
 
@@ -162,7 +162,6 @@
     if (flyerPlaylist.length > 1) {
       rotationInterval = setInterval(rotateFlyers, displayDuration);
     } else {
-      // Fallback safety for 1 flyer setup
       rotationInterval = setTimeout(() => { location.reload(); }, displayDuration);
     }
   }
@@ -176,10 +175,10 @@
   // 5. INTERACTION EVENT (Skip on Click)
   stage.addEventListener("click", () => {
     rotateFlyers();
-    resetTimer(); // Pushes out the next automatic slide step so it doesn't instantly double-flip
+    resetTimer();
   });
 
-  // Kick off the auto-rotation loop on boot
+  // Start the sign engine
   startTimer();
 </script>
 
