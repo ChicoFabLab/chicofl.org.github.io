@@ -22,6 +22,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    cursor: pointer; /* Indicates the screen is clickable/tappable */
   }
 
   /* Both flyer layers sit perfectly on top of each other */
@@ -56,16 +57,15 @@
 </head>
 <body>
 
-  <div class="signage-stage">
+  <div class="signage-stage" id="stage">
     <img id="layerA" class="flyer-layer active" src="flyer1.png" alt="Signage Display">
-    <img id="layerB" class="flyer-layer hidden" src="flyer2.png" alt="Signage Display">
+    <img id="layerB" class="flyer-layer hidden" src="" alt="Signage Display">
   </div>
 
 <script>
   // ==========================================
   // --- SIGNAGE PLAYLIST CONFIGURATION -------
   // ==========================================
-  // Add as many flyers as you want here
   const flyerPlaylist = [
     "flyer1.png", 
     "flyer2.png",  
@@ -82,19 +82,40 @@
   let currentIndex = 0;
   const layerA = document.getElementById("layerA");
   const layerB = document.getElementById("layerB");
+  const stage = document.getElementById("stage");
   
   let isLayerAActive = true;
+  let rotationInterval = null;
+  const cachedImages = [];
 
-  function rotateFlyers() {
-    // Check if we just finished showing the very last flyer in the playlist
+  // 1. IMMEDIATE PRE-CACHING
+  // Loads all playlist images into browser memory right away
+  function preCacheImages() {
+    flyerPlaylist.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+      cachedImages.push(img);
+    });
+  }
+  preCacheImages();
+
+  // 2. ROTATION LOGIC
+  async function rotateFlyers() {
+    // Check if we are currently looking at the very last flyer
     if (currentIndex === flyerPlaylist.length - 1) {
-      // Force a reload from the server to pull down code or image updates
-      location.reload();
-      return; 
+      const updated = await checkForUpdates();
+      if (updated) {
+        // Code changed! Force reload from server to pick up new images/assets
+        location.reload();
+        return; 
+      } else {
+        // No changes found. Reset index to loop cleanly back to the first frame
+        currentIndex = 0;
+      }
+    } else {
+      currentIndex++;
     }
 
-    // Otherwise, move to the next image index
-    currentIndex++;
     const nextImageSrc = flyerPlaylist[currentIndex];
 
     if (isLayerAActive) {
@@ -114,13 +135,52 @@
     isLayerAActive = !isLayerAActive;
   }
 
-  // Fallback safety: If there is only 1 flyer, reload the page after the duration 
-  // to check if new files have been added to the playlist.
-  if (flyerPlaylist.length > 1) {
-    setInterval(rotateFlyers, displayDuration);
-  } else {
-    setTimeout(() => { location.reload(); }, displayDuration);
+  // 3. SILENT CODES/PLAYLIST CHECK
+  // Fetches index.html behind the scenes to see if the file contents have shifted
+  async function checkForUpdates() {
+    try {
+      // Append a random cache-buster timestamp so the browser doesn't give us a stale file
+      const response = await fetch(window.location.href, { cache: "no-store" });
+      if (!response.ok) return false;
+      
+      const serverHtml = await response.text();
+      
+      // Store current DOM HTML string for comparison
+      const currentHtml = document.documentElement.outerHTML;
+      
+      // We look strictly at structural lengths or hash differences. 
+      // If length shifts significantly, something was modified.
+      return serverHtml.length !== currentHtml.length;
+    } catch (e) {
+      console.error("Update check failed:", e);
+      return false; // Fail gracefully and just keep looping seamlessly
+    }
   }
+
+  // 4. TIMER MANAGEMENT
+  function startTimer() {
+    if (flyerPlaylist.length > 1) {
+      rotationInterval = setInterval(rotateFlyers, displayDuration);
+    } else {
+      // Fallback safety for 1 flyer setup
+      rotationInterval = setTimeout(() => { location.reload(); }, displayDuration);
+    }
+  }
+
+  function resetTimer() {
+    clearInterval(rotationInterval);
+    clearTimeout(rotationInterval);
+    startTimer();
+  }
+
+  // 5. INTERACTION EVENT (Skip on Click)
+  stage.addEventListener("click", () => {
+    rotateFlyers();
+    resetTimer(); // Pushes out the next automatic slide step so it doesn't instantly double-flip
+  });
+
+  // Kick off the auto-rotation loop on boot
+  startTimer();
 </script>
 
 </body>
