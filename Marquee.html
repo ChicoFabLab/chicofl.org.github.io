@@ -557,16 +557,16 @@
   // ==========================================
   // Medium-distance kiosk defaults. Still rejects one-frame glitches, but allows
   // a visitor to trigger the menu from farther away than the conservative version.
-  const faceMinConfidence = 0.72;
-  const faceProximityThreshold = 0.20; // Face can be a bit smaller in frame, allowing more distance
-  const faceMinWidthThreshold = 0.12; // Slightly smaller minimum width so it works farther away
-  const faceDwellTime = 900; // Quicker trigger: about 0.9 seconds of stable presence
-  const faceAbsenceTime = 3500; // Auto-close menu if no face is detected for 3.5 seconds
+  const faceMinConfidence = 0.74;
+  const faceProximityThreshold = 0.10; // Much smaller face allowed in frame so detection works from much farther back
+  const faceMinWidthThreshold = 0.06; // Smaller minimum width so detection works from much farther away
+  const faceDwellTime = 700; // Slightly shorter in-trigger for faster walk-up response
+  const faceAbsenceTime = 7000; // Slower out-trigger so the menu stays open longer after someone steps away
   const faceCooldownTime = 6000; // Prevent immediate re-triggering after close, but recover sooner
-  const requiredFaceFrames = 4; // Fewer good frames required so it opens sooner
-  const maxMissedFaceFrames = 4; // Allow a few missed frames, but reset faster
-  const faceFrameInterval = 80; // Process camera about 12 times/second for quicker response
-  const faceCenterZone = { minX: 0.12, maxX: 0.88, minY: 0.06, maxY: 0.92 };
+  const requiredFaceFrames = 3; // Fewer stable frames required for faster activation
+  const maxMissedFaceFrames = 6; // Allow more missed frames before reset to help at longer distances
+  const faceFrameInterval = 80; // Keep processing speed the same for quick response
+  const faceCenterZone = { minX: 0.08, maxX: 0.92, minY: 0.04, maxY: 0.94 };
   // ==========================================
 
   let currentIndex = 0;
