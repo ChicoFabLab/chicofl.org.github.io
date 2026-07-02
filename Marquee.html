@@ -555,18 +555,29 @@
   // ==========================================
   // --- WEBCAM FACE DETECTION CONFIGURATION --
   // ==========================================
-  // Medium-distance kiosk defaults. Still rejects one-frame glitches, but allows
-  // a visitor to trigger the menu from farther away than the conservative version.
+  // Kiosk face detection is split into two modes:
+  // 1) Trigger detection: stricter, used to OPEN the menu.
+  // 2) Presence detection: looser, used to KEEP the menu open while someone leans in,
+  //    looks down at the screen, or moves slightly out of the camera's sweet spot.
   const faceMinConfidence = 0.74;
-  const faceProximityThreshold = 0.10; // Much smaller face allowed in frame so detection works from much farther back
-  const faceMinWidthThreshold = 0.06; // Smaller minimum width so detection works from much farther away
-  const faceDwellTime = 700; // Slightly shorter in-trigger for faster walk-up response
-  const faceAbsenceTime = 7000; // Slower out-trigger so the menu stays open longer after someone steps away
-  const faceCooldownTime = 6000; // Prevent immediate re-triggering after close, but recover sooner
-  const requiredFaceFrames = 3; // Fewer stable frames required for faster activation
-  const maxMissedFaceFrames = 6; // Allow more missed frames before reset to help at longer distances
-  const faceFrameInterval = 80; // Keep processing speed the same for quick response
-  const faceCenterZone = { minX: 0.08, maxX: 0.92, minY: 0.04, maxY: 0.94 };
+  const faceProximityThreshold = 0.10; // Smaller face allowed in frame so detection works farther back
+  const faceMinWidthThreshold = 0.06; // Smaller minimum width so detection works farther away
+  const faceDwellTime = 700; // Fast walk-up trigger
+  const faceAbsenceTime = 14000; // Keep menu open for 14 seconds after the last loose presence hit
+  const faceCooldownTime = 5000; // Prevent immediate re-triggering after close
+  const requiredFaceFrames = 3; // Stable frames required for activation
+  const maxMissedFaceFrames = 8; // More forgiving at longer distance
+  const faceFrameInterval = 80; // About 12 checks/second
+
+  // Wider trigger zone so someone does not need to be perfectly centered.
+  const faceCenterZone = { minX: 0.02, maxX: 0.98, minY: 0.00, maxY: 0.98 };
+
+  // Loose presence settings. These DO NOT open the menu by themselves.
+  // They only prevent the menu from closing while a person is probably still there.
+  const loosePresenceMinConfidence = 0.45;
+  const loosePresenceMinHeight = 0.045;
+  const loosePresenceMinWidth = 0.025;
+  const touchPresenceGraceTime = 12000; // Touching the menu counts as presence for 12 seconds
   // ==========================================
 
   let currentIndex = 0;
@@ -599,6 +610,8 @@
   let missedFaceFrameCount = 0;
   let lastFaceTriggerTime = 0;
   let lastFaceProcessTime = 0;
+  let lastLooseFaceSeenTime = 0;
+  let lastMenuInteractionTime = 0;
 
   // Circular Hold Indicator configuration
   const holdCircle = document.getElementById("holdCircle");
@@ -884,6 +897,8 @@
   // 6. INTERACTIVE MENU NAVIGATION LOGIC
   function openMenu() {
     isMenuOpen = true;
+    lastLooseFaceSeenTime = Date.now();
+    lastMenuInteractionTime = Date.now();
     
     // Freeze Marquee rotation
     clearInterval(rotationInterval);
@@ -919,6 +934,8 @@
     missedFaceFrameCount = 0;
     facePresenceStartTime = 0;
     faceAbsenceStartTime = 0;
+    lastLooseFaceSeenTime = 0;
+    lastMenuInteractionTime = 0;
 
     closeVideo();
     
@@ -1128,13 +1145,12 @@
     const score = getDetectionScore(detection);
     if (score < faceMinConfidence) return false;
 
-    // MediaPipe boxes are normalized 0..1. Accept only a face that is both tall
-    // and wide enough. The old code used height OR width, which is too permissive.
+    // Trigger detection is still reasonably strict because this can OPEN the menu.
     if (faceHeight < faceProximityThreshold) return false;
     if (faceWidth < faceMinWidthThreshold) return false;
 
     const aspect = faceHeight / faceWidth;
-    if (aspect < 0.75 || aspect > 2.4) return false;
+    if (aspect < 0.65 || aspect > 2.7) return false;
 
     const xMin = getBoxValue(box, 'xMin', 'xmin');
     const yMin = getBoxValue(box, 'yMin', 'ymin');
@@ -1144,21 +1160,53 @@
     if (xCenter < faceCenterZone.minX || xCenter > faceCenterZone.maxX) return false;
     if (yCenter < faceCenterZone.minY || yCenter > faceCenterZone.maxY) return false;
 
-    // A real face should usually have landmarks. This helps reject posters, shadows,
-    // reflections, or high-contrast objects that only look face-like for one frame.
-    if (detection.landmarks && detection.landmarks.length < 4) return false;
+    // Do not require landmarks here. Looking down at the screen can make landmarks
+    // less reliable even when the person is actually present.
+    return true;
+  }
+
+  function isLoosePresenceDetection(detection) {
+    const box = detection.boundingBox;
+    if (!box) return false;
+
+    const faceHeight = getBoxValue(box, 'height');
+    const faceWidth = getBoxValue(box, 'width');
+    if (!faceHeight || !faceWidth) return false;
+
+    const score = getDetectionScore(detection);
+    if (score < loosePresenceMinConfidence) return false;
+
+    // Loose presence is intentionally forgiving. It cannot open the menu by itself;
+    // it only keeps the menu from closing while someone is still at the screen.
+    if (faceHeight < loosePresenceMinHeight && faceWidth < loosePresenceMinWidth) return false;
+
+    const aspect = faceHeight / faceWidth;
+    if (aspect < 0.35 || aspect > 3.5) return false;
 
     return true;
+  }
+
+  function noteMenuInteraction() {
+    if (isMenuOpen) {
+      lastMenuInteractionTime = Date.now();
+      faceAbsenceStartTime = 0;
+    }
   }
 
   function onFaceResults(results) {
     if (!isWebcamActive) return;
 
     const now = Date.now();
-    const closeFaceDetected = !!(results.detections || []).find(isValidFaceDetection);
+    const detections = results.detections || [];
+    const triggerFaceDetected = !!detections.find(isValidFaceDetection);
+    const loosePresenceDetected = triggerFaceDetected || !!detections.find(isLoosePresenceDetection);
 
-    if (closeFaceDetected) {
+    if (loosePresenceDetected) {
+      lastLooseFaceSeenTime = now;
       faceAbsenceStartTime = 0;
+    }
+
+    if (triggerFaceDetected) {
       missedFaceFrameCount = 0;
       validFaceFrameCount++;
 
@@ -1184,14 +1232,26 @@
         validFaceFrameCount = 0;
         facePresenceStartTime = 0;
       }
+    }
 
-      if (isMenuOpen && !isVideoPlaying) {
+    // Close logic is deliberately looser than open logic.
+    // A visitor may lean in, look below the camera, or step partly out of the trigger zone
+    // while still actively using the screen.
+    if (isMenuOpen && !isVideoPlaying) {
+      const recentTouchPresence =
+        lastMenuInteractionTime && (now - lastMenuInteractionTime < touchPresenceGraceTime);
+
+      const lastKnownPresence = Math.max(lastLooseFaceSeenTime || 0, lastMenuInteractionTime || 0);
+
+      if (!recentTouchPresence && now - lastKnownPresence >= faceAbsenceTime) {
         if (faceAbsenceStartTime === 0) {
           faceAbsenceStartTime = now;
-        } else if (now - faceAbsenceStartTime >= faceAbsenceTime) {
-          console.log("Face absence detected. Returning to marquee...");
+        } else if (now - faceAbsenceStartTime >= 1000) {
+          console.log("Extended face absence detected. Returning to marquee...");
           closeMenu();
         }
+      } else {
+        faceAbsenceStartTime = 0;
       }
     }
   }
@@ -1281,7 +1341,10 @@
 
     // Global interaction listener for idle timer reset
     document.addEventListener("pointerdown", () => {
-      if (isMenuOpen) resetIdleTimer();
+      if (isMenuOpen) {
+        noteMenuInteraction();
+        resetIdleTimer();
+      }
     });
   }
 
