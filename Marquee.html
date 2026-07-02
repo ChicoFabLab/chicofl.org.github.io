@@ -557,16 +557,16 @@
   // ==========================================
   // Medium-distance kiosk defaults. Still rejects one-frame glitches, but allows
   // a visitor to trigger the menu from farther away than the conservative version.
-  const faceMinConfidence = 0.75;
-  const faceProximityThreshold = 0.22; // Face must occupy at least 22% of frame height
-  const faceMinWidthThreshold = 0.14; // ...and at least 14% of frame width
-  const faceDwellTime = 2200; // Must stand in front of camera for 2.2 seconds
+  const faceMinConfidence = 0.72;
+  const faceProximityThreshold = 0.20; // Face can be a bit smaller in frame, allowing more distance
+  const faceMinWidthThreshold = 0.12; // Slightly smaller minimum width so it works farther away
+  const faceDwellTime = 2000; // Slightly faster response while still filtering quick false hits
   const faceAbsenceTime = 10000; // Auto-close menu if no face is detected for 10 seconds
   const faceCooldownTime = 12000; // Prevent immediate re-triggering after close
-  const requiredFaceFrames = 8; // Number of valid detections needed before opening
+  const requiredFaceFrames = 7; // Slightly fewer consistent good frames required
   const maxMissedFaceFrames = 4; // Ignore a few bad frames before resetting
   const faceFrameInterval = 125; // Process camera about 8 times/second
-  const faceCenterZone = { minX: 0.15, maxX: 0.85, minY: 0.08, maxY: 0.90 };
+  const faceCenterZone = { minX: 0.12, maxX: 0.88, minY: 0.06, maxY: 0.92 };
   // ==========================================
 
   let currentIndex = 0;
