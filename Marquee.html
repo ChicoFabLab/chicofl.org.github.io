@@ -555,9 +555,18 @@
   // ==========================================
   // --- WEBCAM FACE DETECTION CONFIGURATION --
   // ==========================================
-  const faceProximityThreshold = 0.18; // Face must occupy at least 18% of frame height to count as "close"
-  const faceDwellTime = 1500; // Must stand in front of camera for 1.5 seconds to trigger menu
-  const faceAbsenceTime = 8000; // Auto-close menu if no face is detected for 8 seconds
+  // Conservative defaults for kiosk use. Linux/Chromium camera drivers can be noisier,
+  // so require a larger, centered, higher-confidence face over multiple frames.
+  const faceMinConfidence = 0.80;
+  const faceProximityThreshold = 0.28; // Face must occupy at least 28% of frame height
+  const faceMinWidthThreshold = 0.18; // ...and at least 18% of frame width
+  const faceDwellTime = 2500; // Must stand in front of camera for 2.5 seconds
+  const faceAbsenceTime = 10000; // Auto-close menu if no face is detected for 10 seconds
+  const faceCooldownTime = 12000; // Prevent immediate re-triggering after close
+  const requiredFaceFrames = 10; // Number of valid detections needed before opening
+  const maxMissedFaceFrames = 3; // Ignore a few bad frames before resetting
+  const faceFrameInterval = 150; // Process camera about 6-7 times/second
+  const faceCenterZone = { minX: 0.20, maxX: 0.80, minY: 0.10, maxY: 0.85 };
   // ==========================================
 
   let currentIndex = 0;
@@ -586,6 +595,10 @@
   let facePresenceStartTime = 0;
   let faceAbsenceStartTime = 0;
   let isWebcamActive = false;
+  let validFaceFrameCount = 0;
+  let missedFaceFrameCount = 0;
+  let lastFaceTriggerTime = 0;
+  let lastFaceProcessTime = 0;
 
   // Circular Hold Indicator configuration
   const holdCircle = document.getElementById("holdCircle");
@@ -794,27 +807,76 @@
   }
 
   // 5.5 VOICE ANNOUNCEMENT LOGIC
-  function announceWelcome() {
-    if ('speechSynthesis' in window) {
-      // Cancel any ongoing speech
-      window.speechSynthesis.cancel();
-      
-      const utterance = new SpeechSynthesisUtterance("Welcome! Maker Radio is off to your right ... and Chico Fab lab to your left ... or press a menu item");
-      
-      // Fine-tune rate (speed) and pitch
-      utterance.rate = 0.95; // Slightly slower, sounds more human & clear
-      utterance.pitch = 1.0;
-      
-      // Attempt to load clean English voices
-      const voices = window.speechSynthesis.getVoices();
-      const preferredVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) ||
-                            voices.find(v => v.lang.startsWith('en') && v.name.includes('Natural')) ||
-                            voices.find(v => v.lang.startsWith('en'));
-                            
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
+  // Best result for a public kiosk: record or generate this audio once and place it here:
+  // Audio/welcome.mp3
+  const welcomeAudio = new Audio('Audio/welcome.mp3');
+  welcomeAudio.preload = 'auto';
+
+  async function playRecordedWelcomeIfAvailable() {
+    try {
+      welcomeAudio.currentTime = 0;
+      await welcomeAudio.play();
+      return true;
+    } catch (e) {
+      // If the audio file is missing or autoplay is blocked, fall back to browser TTS.
+      return false;
+    }
+  }
+
+  function loadVoices() {
+    return new Promise(resolve => {
+      if (!('speechSynthesis' in window)) {
+        resolve([]);
+        return;
       }
-      
+
+      let voices = window.speechSynthesis.getVoices();
+      if (voices.length) {
+        resolve(voices);
+        return;
+      }
+
+      const done = () => resolve(window.speechSynthesis.getVoices());
+      window.speechSynthesis.addEventListener('voiceschanged', done, { once: true });
+      setTimeout(done, 1000); // Do not hang forever on browsers that never fire voiceschanged.
+    });
+  }
+
+  function choosePreferredVoice(voices) {
+    const englishVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+
+    // These names vary by operating system. Put smoother voices first, but keep safe fallbacks.
+    const preferredNameFragments = [
+      'Natural', 'Neural', 'Jenny', 'Aria', 'Guy', 'Zira', 'David',
+      'Samantha', 'Google US English', 'Google UK English', 'English'
+    ];
+
+    for (const fragment of preferredNameFragments) {
+      const match = englishVoices.find(v => v.name && v.name.includes(fragment));
+      if (match) return match;
+    }
+
+    return englishVoices.find(v => v.default) || englishVoices[0] || null;
+  }
+
+  async function announceWelcome() {
+    // Recorded audio gives the same human voice on Windows, Linux, Chrome, and Chromium.
+    if (await playRecordedWelcomeIfAvailable()) return;
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(
+        "Welcome! Maker Radio is off to your right ... and Chico Fab lab to your left ... or press a menu item"
+      );
+
+      utterance.rate = 0.90;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      const preferredVoice = choosePreferredVoice(await loadVoices());
+      if (preferredVoice) utterance.voice = preferredVoice;
+
       window.speechSynthesis.speak(utterance);
     }
   }
@@ -848,6 +910,15 @@
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
+    welcomeAudio.pause();
+    welcomeAudio.currentTime = 0;
+
+    // Reset face tracking and add a cooldown so the menu does not pop right back open.
+    lastFaceTriggerTime = Date.now();
+    validFaceFrameCount = 0;
+    missedFaceFrameCount = 0;
+    facePresenceStartTime = 0;
+    faceAbsenceStartTime = 0;
 
     closeVideo();
     
@@ -1002,7 +1073,7 @@
 
       faceDetection.setOptions({
         model: 'short', // 'short' is optimized for faces within 2 meters
-        minDetectionConfidence: 0.55
+        minDetectionConfidence: faceMinConfidence
       });
 
       faceDetection.onResults(onFaceResults);
@@ -1011,8 +1082,11 @@
       if (typeof window.Camera !== 'undefined') {
         camera = new window.Camera(video, {
           onFrame: async () => {
-            // Process frame only if we aren't currently playing a video (saves CPU)
-            if (!isVideoPlaying) {
+            // Process only a few frames per second. This lowers CPU load and avoids
+            // reacting to single-frame false detections.
+            const now = performance.now();
+            if (!isVideoPlaying && now - lastFaceProcessTime >= faceFrameInterval) {
+              lastFaceProcessTime = now;
               await faceDetection.send({ image: video });
             }
           },
@@ -1029,54 +1103,94 @@
     }
   }
 
+  function getDetectionScore(detection) {
+    if (typeof detection.score === 'number') return detection.score;
+    if (Array.isArray(detection.score)) return detection.score[0] || 0;
+    if (typeof detection.confidence === 'number') return detection.confidence;
+    return 1; // Legacy MediaPipe may not expose score after filtering.
+  }
+
+  function getBoxValue(box, ...names) {
+    for (const name of names) {
+      if (typeof box[name] === 'number') return box[name];
+    }
+    return null;
+  }
+
+  function isValidFaceDetection(detection) {
+    const box = detection.boundingBox;
+    if (!box) return false;
+
+    const faceHeight = getBoxValue(box, 'height');
+    const faceWidth = getBoxValue(box, 'width');
+    if (!faceHeight || !faceWidth) return false;
+
+    const score = getDetectionScore(detection);
+    if (score < faceMinConfidence) return false;
+
+    // MediaPipe boxes are normalized 0..1. Accept only a face that is both tall
+    // and wide enough. The old code used height OR width, which is too permissive.
+    if (faceHeight < faceProximityThreshold) return false;
+    if (faceWidth < faceMinWidthThreshold) return false;
+
+    const aspect = faceHeight / faceWidth;
+    if (aspect < 0.75 || aspect > 2.4) return false;
+
+    const xMin = getBoxValue(box, 'xMin', 'xmin');
+    const yMin = getBoxValue(box, 'yMin', 'ymin');
+    const xCenter = getBoxValue(box, 'xCenter') ?? (xMin !== null ? xMin + faceWidth / 2 : 0.5);
+    const yCenter = getBoxValue(box, 'yCenter') ?? (yMin !== null ? yMin + faceHeight / 2 : 0.5);
+
+    if (xCenter < faceCenterZone.minX || xCenter > faceCenterZone.maxX) return false;
+    if (yCenter < faceCenterZone.minY || yCenter > faceCenterZone.maxY) return false;
+
+    // A real face should usually have landmarks. This helps reject posters, shadows,
+    // reflections, or high-contrast objects that only look face-like for one frame.
+    if (detection.landmarks && detection.landmarks.length < 4) return false;
+
+    return true;
+  }
+
   function onFaceResults(results) {
     if (!isWebcamActive) return;
 
-    let closeFaceDetected = false;
-
-    if (results.detections && results.detections.length > 0) {
-      // Find if any face matches the proximity threshold
-      for (const detection of results.detections) {
-        const box = detection.boundingBox;
-        if (box) {
-          // Bounding box dimensions are normalized (0 to 1) relative to frame size
-          const faceHeight = box.height;
-          const faceWidth = box.width;
-          
-          if (faceHeight >= faceProximityThreshold || faceWidth >= faceProximityThreshold) {
-            closeFaceDetected = true;
-            break;
-          }
-        }
-      }
-    }
+    const now = Date.now();
+    const closeFaceDetected = !!(results.detections || []).find(isValidFaceDetection);
 
     if (closeFaceDetected) {
-      // Reset absence timer
       faceAbsenceStartTime = 0;
+      missedFaceFrameCount = 0;
+      validFaceFrameCount++;
 
-      // Handle presence detection (dwell check)
-      if (!isMenuOpen) {
-        if (facePresenceStartTime === 0) {
-          facePresenceStartTime = Date.now();
-        } else if (Date.now() - facePresenceStartTime >= faceDwellTime) {
-          console.log("Face presence detected for 1.5s. Opening menu...");
+      if (!isMenuOpen && now - lastFaceTriggerTime >= faceCooldownTime) {
+        if (facePresenceStartTime === 0) facePresenceStartTime = now;
+
+        const stayedLongEnough = now - facePresenceStartTime >= faceDwellTime;
+        const enoughGoodFrames = validFaceFrameCount >= requiredFaceFrames;
+
+        if (stayedLongEnough && enoughGoodFrames) {
+          console.log("Stable face presence detected. Opening menu...");
           openMenu();
+          lastFaceTriggerTime = now;
+          validFaceFrameCount = 0;
+          missedFaceFrameCount = 0;
           facePresenceStartTime = 0;
         }
       }
     } else {
-      // No close face detected
-      facePresenceStartTime = 0;
+      missedFaceFrameCount++;
 
-      // Handle absence auto-close
+      if (missedFaceFrameCount > maxMissedFaceFrames) {
+        validFaceFrameCount = 0;
+        facePresenceStartTime = 0;
+      }
+
       if (isMenuOpen && !isVideoPlaying) {
         if (faceAbsenceStartTime === 0) {
-          faceAbsenceStartTime = Date.now();
-        } else if (Date.now() - faceAbsenceStartTime >= faceAbsenceTime) {
-          console.log("Face absence detected for 8s. Returning to marquee...");
+          faceAbsenceStartTime = now;
+        } else if (now - faceAbsenceStartTime >= faceAbsenceTime) {
+          console.log("Face absence detected. Returning to marquee...");
           closeMenu();
-          faceAbsenceStartTime = 0;
         }
       }
     }
