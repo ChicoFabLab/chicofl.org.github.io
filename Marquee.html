@@ -58,7 +58,7 @@
 <body>
 
   <div class="signage-stage" id="stage">
-    <img id="layerA" class="flyer-layer active" src="Marquee/flyer_1.png" alt="Signage Display">
+    <img id="layerA" class="flyer-layer active" src="" alt="Signage Display" style="opacity: 0;">
     <img id="layerB" class="flyer-layer hidden" src="" alt="Signage Display">
   </div>
 
@@ -66,14 +66,7 @@
   // ==========================================
   // --- SIGNAGE PLAYLIST CONFIGURATION -------
   // ==========================================
-  const flyerPlaylist = [
-    "Marquee/flyer_1.png", 
-    "Marquee/flyer_2.png",  
-    "Marquee/flyer_3.png",
-    "Marquee/flyer_4.png",
-    "Marquee/flyer_5.png",
-    "Marquee/flyer_6.png"
-  ];
+  let flyerPlaylist = [];
 
   // How long each flyer stays on screen (20000ms = 20 seconds)
   const displayDuration = 20000; 
@@ -92,7 +85,91 @@
   let initialETag = null;
   let initialLastModified = null;
 
-  // 1. IMMEDIATE PRE-CACHING & INITIAL HEADERS CAPTURE
+  // 1. DYNAMIC FILE DISCOVERY
+  async function discoverFlyers() {
+    const discovered = [];
+    
+    // Method 1: Try directory listing first (for servers with listing enabled)
+    try {
+      const response = await fetch('Marquee/', { cache: 'no-store' });
+      if (response.ok) {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('html')) {
+          const text = await response.text();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(text, 'text/html');
+          const links = doc.querySelectorAll('a');
+          
+          links.forEach(link => {
+            const href = link.getAttribute('href');
+            if (href) {
+              const decodedHref = decodeURIComponent(href);
+              if (decodedHref.toLowerCase().endsWith('.png')) {
+                const filename = decodedHref.split('/').pop();
+                if (filename) {
+                  discovered.push(`Marquee/${filename}`);
+                }
+              }
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Directory listing not supported or blocked, falling back to probing.", e);
+    }
+
+    // Method 2: Parallel probing (useful for static hosts like GitHub Pages where listing is disabled)
+    try {
+      const probePromises = [];
+      const maxProbes = 50; 
+      for (let i = 1; i <= maxProbes; i++) {
+        const fileUrl = `Marquee/flyer_${i}.png`;
+        probePromises.push(
+          fetch(fileUrl, { method: 'HEAD', cache: 'no-store' })
+            .then(res => res.ok ? fileUrl : null)
+            .catch(() => null)
+        );
+      }
+      const results = await Promise.all(probePromises);
+      results.forEach(url => {
+        if (url) discovered.push(url);
+      });
+    } catch (e) {
+      console.error("Parallel probing failed:", e);
+    }
+
+    // Fallback: Default array if nothing was found
+    if (discovered.length === 0) {
+      return [
+        "Marquee/flyer_1.png", 
+        "Marquee/flyer_2.png",  
+        "Marquee/flyer_3.png",
+        "Marquee/flyer_4.png",
+        "Marquee/flyer_5.png",
+        "Marquee/flyer_6.png"
+      ];
+    }
+
+    // Remove duplicates and sort them numerically or alphabetically
+    return [...new Set(discovered)].sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, ''), 10);
+      const numB = parseInt(b.replace(/\D/g, ''), 10);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB;
+      }
+      return a.localeCompare(b);
+    });
+  }
+
+  function arraysEqual(a, b) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
+
+  // 2. PRE-CACHING & HEADERS CAPTURE
   function preCacheImages() {
     flyerPlaylist.forEach((src) => {
       const img = new Image();
@@ -103,7 +180,6 @@
   
   async function captureInitialFileTokens() {
     try {
-      // Grab headers on initial boot so we have a reference point
       const response = await fetch(window.location.href, { method: 'HEAD', cache: 'no-store' });
       initialETag = response.headers.get('ETag');
       initialLastModified = response.headers.get('Last-Modified');
@@ -111,11 +187,8 @@
       console.error("Failed to capture initial file signatures", e);
     }
   }
-  
-  preCacheImages();
-  captureInitialFileTokens();
 
-  // 2. ROTATION LOGIC
+  // 3. ROTATION LOGIC
   function rotateFlyers() {
     let loopResetOccurred = false;
 
@@ -144,28 +217,36 @@
 
     isLayerAActive = !isLayerAActive;
 
-    // Check for real backend script updates safely after the slide is long done transitioning
+    // Check for updates safely after the slide is long done transitioning
     if (loopResetOccurred) {
       setTimeout(async () => {
+        // Compare list of files in directory
+        const currentFiles = await discoverFlyers();
+        if (!arraysEqual(currentFiles, flyerPlaylist)) {
+          console.log("Playlist content changed on disk. Reloading...");
+          location.reload();
+          return;
+        }
+
+        // Compare html file token
         const updated = await checkForUpdates();
         if (updated) {
+          console.log("Marquee.html has updated on disk. Reloading...");
           location.reload();
         }
       }, 3000); 
     }
   }
 
-  // 3. RELIABLE UPDATE CHECK VIA HTTP HEADERS
+  // 4. RELIABLE UPDATE CHECK VIA HTTP HEADERS
   async function checkForUpdates() {
     try {
-      // Use HEAD request to check headers without wasting bandwidth downloading the file text
       const response = await fetch(window.location.href, { method: 'HEAD', cache: 'no-store' });
       if (!response.ok) return false;
       
       const newETag = response.headers.get('ETag');
       const newLastModified = response.headers.get('Last-Modified');
       
-      // If either token exists and doesn't match our boot config, the file changed on disk
       if (initialETag && newETag && initialETag !== newETag) return true;
       if (initialLastModified && newLastModified && initialLastModified !== newLastModified) return true;
       
@@ -176,7 +257,7 @@
     }
   }
 
-  // 4. TIMER MANAGEMENT
+  // 5. TIMER MANAGEMENT
   function startTimer() {
     if (flyerPlaylist.length > 1) {
       rotationInterval = setInterval(rotateFlyers, displayDuration);
@@ -185,19 +266,36 @@
     }
   }
 
+  // 6. INITIALIZATION
+  async function initSignage() {
+    // Dynamically find available flyers
+    flyerPlaylist = await discoverFlyers();
+    
+    if (flyerPlaylist.length > 0) {
+      layerA.src = flyerPlaylist[0];
+      // Reset transition opacity styling so it fades in nicely on initial load
+      layerA.style.opacity = "";
+    }
+
+    await captureInitialFileTokens();
+    preCacheImages();
+    startTimer();
+
+    // Interaction Event (Skip on Click)
+    stage.addEventListener("click", () => {
+      rotateFlyers();
+      resetTimer();
+    });
+  }
+
   function resetTimer() {
     clearInterval(rotationInterval);
     clearTimeout(rotationInterval);
     startTimer();
   }
 
-  // 5. INTERACTION EVENT (Skip on Click)
-  stage.addEventListener("click", () => {
-    rotateFlyers();
-    resetTimer();
-  });
-
-  startTimer();
+  // Kickoff on load
+  initSignage();
 </script>
 
 </body>
