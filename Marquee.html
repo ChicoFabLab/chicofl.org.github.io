@@ -560,12 +560,12 @@
   const faceMinConfidence = 0.72;
   const faceProximityThreshold = 0.20; // Face can be a bit smaller in frame, allowing more distance
   const faceMinWidthThreshold = 0.12; // Slightly smaller minimum width so it works farther away
-  const faceDwellTime = 1400; // Faster trigger: about 1.4 seconds of stable presence
-  const faceAbsenceTime = 10000; // Auto-close menu if no face is detected for 10 seconds
-  const faceCooldownTime = 12000; // Prevent immediate re-triggering after close
-  const requiredFaceFrames = 5; // Fewer good frames required so it opens sooner
-  const maxMissedFaceFrames = 5; // Allow a few missed frames so detection does not restart too easily
-  const faceFrameInterval = 100; // Process camera about 10 times/second for quicker response
+  const faceDwellTime = 900; // Quicker trigger: about 0.9 seconds of stable presence
+  const faceAbsenceTime = 3500; // Auto-close menu if no face is detected for 3.5 seconds
+  const faceCooldownTime = 6000; // Prevent immediate re-triggering after close, but recover sooner
+  const requiredFaceFrames = 4; // Fewer good frames required so it opens sooner
+  const maxMissedFaceFrames = 4; // Allow a few missed frames, but reset faster
+  const faceFrameInterval = 80; // Process camera about 12 times/second for quicker response
   const faceCenterZone = { minX: 0.12, maxX: 0.88, minY: 0.06, maxY: 0.92 };
   // ==========================================
 
