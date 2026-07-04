@@ -578,14 +578,6 @@
   const loosePresenceMinHeight = 0.045;
   const loosePresenceMinWidth = 0.025;
   const touchPresenceGraceTime = 12000; // Touching the menu counts as presence for 12 seconds
-
-  // Webcam reconnect/watchdog settings.
-  // These do not stop Linux/USB from dropping a camera, but they allow the page
-  // to notice a dead/frozen stream and try to reopen the camera without a full refresh.
-  const webcamRestartDelay = 2500; // Wait before trying to reopen the camera
-  const webcamWatchdogInterval = 5000; // How often to check stream health
-  const webcamFrameStaleTime = 12000; // If no frame callback arrives for this long, restart
-  const webcamStartRetryTime = 5000; // Retry if webcam startup fails
   // ==========================================
 
   let currentIndex = 0;
@@ -614,12 +606,6 @@
   let facePresenceStartTime = 0;
   let faceAbsenceStartTime = 0;
   let isWebcamActive = false;
-  let isWebcamStarting = false;
-  let webcamVideo = null;
-  let webcamRestartTimeout = null;
-  let webcamWatchdogTimer = null;
-  let lastWebcamFrameTime = 0;
-  let lastWebcamRestartReason = "";
   let validFaceFrameCount = 0;
   let missedFaceFrameCount = 0;
   let lastFaceTriggerTime = 0;
@@ -1072,157 +1058,31 @@
   }
 
   // 6.5 WEBCAM FACE DETECTION LOGIC
-
-  function createHiddenWebcamVideo() {
-    const video = document.createElement("video");
-    video.id = "webcamVideo";
-
-    // Avoid display:none for live video. Some browser/GPU/camera pipelines are
-    // more reliable when the media element still exists in layout, even if it is
-    // offscreen and transparent.
-    video.style.position = "fixed";
-    video.style.left = "-9999px";
-    video.style.top = "0";
-    video.style.width = "1px";
-    video.style.height = "1px";
-    video.style.opacity = "0";
-    video.style.pointerEvents = "none";
-
-    video.autoplay = true;
-    video.playsInline = true;
-    video.muted = true;
-    document.body.appendChild(video);
-    return video;
-  }
-
-  function cleanupWebcam() {
-    isWebcamActive = false;
-    isWebcamStarting = false;
-
-    try {
-      if (camera && typeof camera.stop === "function") {
-        camera.stop();
-      }
-    } catch (err) {
-      console.warn("Camera helper stop failed:", err);
-    }
-
-    try {
-      if (webcamVideo && webcamVideo.srcObject) {
-        webcamVideo.srcObject.getTracks().forEach(track => {
-          try { track.stop(); } catch (e) {}
-        });
-      }
-    } catch (err) {
-      console.warn("Failed to stop webcam tracks:", err);
-    }
-
-    try {
-      if (webcamVideo && webcamVideo.parentNode) {
-        webcamVideo.parentNode.removeChild(webcamVideo);
-      }
-    } catch (err) {
-      console.warn("Failed to remove webcam video element:", err);
-    }
-
-    webcamVideo = null;
-    camera = null;
-    faceDetection = null;
-
-    validFaceFrameCount = 0;
-    missedFaceFrameCount = 0;
-    facePresenceStartTime = 0;
-    faceAbsenceStartTime = 0;
-    lastFaceProcessTime = 0;
-  }
-
-  function scheduleWebcamRestart(reason = "unknown") {
-    lastWebcamRestartReason = reason;
-
-    if (webcamRestartTimeout) return;
-
-    console.warn(`Scheduling webcam restart: ${reason}`);
-
-    webcamRestartTimeout = setTimeout(() => {
-      webcamRestartTimeout = null;
-      cleanupWebcam();
-      initWebcam();
-    }, webcamRestartDelay);
-  }
-
-  function attachWebcamTrackHandlers() {
-    if (!webcamVideo || !webcamVideo.srcObject) return;
-
-    const tracks = webcamVideo.srcObject.getVideoTracks();
-    tracks.forEach(track => {
-      track.onended = () => scheduleWebcamRestart("video track ended");
-      track.onmute = () => scheduleWebcamRestart("video track muted");
-      track.onunmute = () => {
-        lastWebcamFrameTime = Date.now();
-        console.log("Webcam video track unmuted.");
-      };
-    });
-  }
-
-  function startWebcamWatchdog() {
-    if (webcamWatchdogTimer) return;
-
-    webcamWatchdogTimer = setInterval(() => {
-      if (isVideoPlaying) return;
-
-      const now = Date.now();
-
-      if (isWebcamStarting) return;
-
-      if (!isWebcamActive || !webcamVideo) {
-        scheduleWebcamRestart("watchdog found webcam inactive");
-        return;
-      }
-
-      const stream = webcamVideo.srcObject;
-      const tracks = stream ? stream.getVideoTracks() : [];
-      const hasLiveTrack = tracks.some(track => track.readyState === "live");
-
-      if (!hasLiveTrack) {
-        scheduleWebcamRestart("watchdog found no live video track");
-        return;
-      }
-
-      if (lastWebcamFrameTime && now - lastWebcamFrameTime > webcamFrameStaleTime) {
-        scheduleWebcamRestart(`watchdog stale frames: ${now - lastWebcamFrameTime}ms`);
-      }
-    }, webcamWatchdogInterval);
-  }
-
   async function initWebcam() {
-    if (isWebcamStarting || isWebcamActive) return;
-
-    isWebcamStarting = true;
-
     try {
+      // Create hidden video element for webcam feed
+      const video = document.createElement("video");
+      video.id = "webcamVideo";
+      video.style.display = "none";
+      video.style.position = "absolute";
+      video.style.width = "320px";
+      video.style.height = "240px";
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = true;
+      document.body.appendChild(video);
+
       // Verify browser support for MediaDevices
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.warn("Webcam access not supported in this browser/context (requires HTTPS or localhost).");
-        isWebcamStarting = false;
         return;
       }
 
       // Load MediaPipe Face Detection
       if (typeof window.FaceDetection === 'undefined') {
         console.warn("MediaPipe Face Detection library not loaded. Running in touch-only mode.");
-        isWebcamStarting = false;
-        scheduleWebcamRestart("MediaPipe FaceDetection not loaded yet");
         return;
       }
-
-      if (typeof window.Camera === 'undefined') {
-        console.warn("MediaPipe Camera helper not loaded. Running in touch-only mode.");
-        isWebcamStarting = false;
-        scheduleWebcamRestart("MediaPipe Camera helper not loaded yet");
-        return;
-      }
-
-      webcamVideo = createHiddenWebcamVideo();
 
       faceDetection = new window.FaceDetection({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`
@@ -1235,53 +1095,28 @@
 
       faceDetection.onResults(onFaceResults);
 
-      camera = new window.Camera(webcamVideo, {
-        onFrame: async () => {
-          // If this callback stops happening, the watchdog will restart the camera.
-          lastWebcamFrameTime = Date.now();
-
-          // Process only a few frames per second. This lowers CPU load and avoids
-          // reacting to single-frame false detections.
-          const now = performance.now();
-          if (!isVideoPlaying && now - lastFaceProcessTime >= faceFrameInterval) {
-            lastFaceProcessTime = now;
-
-            try {
-              await faceDetection.send({ image: webcamVideo });
-            } catch (err) {
-              console.warn("Face detection frame processing failed:", err);
-              scheduleWebcamRestart("faceDetection.send failed");
+      // Initialize Camera helper
+      if (typeof window.Camera !== 'undefined') {
+        camera = new window.Camera(video, {
+          onFrame: async () => {
+            // Process only a few frames per second. This lowers CPU load and avoids
+            // reacting to single-frame false detections.
+            const now = performance.now();
+            if (!isVideoPlaying && now - lastFaceProcessTime >= faceFrameInterval) {
+              lastFaceProcessTime = now;
+              await faceDetection.send({ image: video });
             }
-          }
-        },
-        width: 320,
-        height: 240
-      });
-      
-      await camera.start();
-
-      // Give Chromium/MediaPipe a short moment to attach the underlying stream.
-      setTimeout(attachWebcamTrackHandlers, 250);
-
-      isWebcamActive = true;
-      isWebcamStarting = false;
-      lastWebcamFrameTime = Date.now();
-      startWebcamWatchdog();
-
-      console.log("Webcam face detection successfully started.");
+          },
+          width: 320,
+          height: 240
+        });
+        
+        await camera.start();
+        isWebcamActive = true;
+        console.log("Webcam face detection successfully started.");
+      }
     } catch (err) {
       console.warn("Failed to initialize webcam face detection:", err);
-      isWebcamActive = false;
-      isWebcamStarting = false;
-      cleanupWebcam();
-
-      // Retry startup. This helps after transient USB/browser/camera failures.
-      if (!webcamRestartTimeout) {
-        webcamRestartTimeout = setTimeout(() => {
-          webcamRestartTimeout = null;
-          initWebcam();
-        }, webcamStartRetryTime);
-      }
     }
   }
 
@@ -1512,9 +1347,6 @@
       }
     });
   }
-
-  // Clean up the camera stream when the page is closed/refreshed.
-  window.addEventListener("beforeunload", cleanupWebcam);
 
   // Kickoff on load
   initSignage();
