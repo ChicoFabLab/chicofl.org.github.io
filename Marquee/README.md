@@ -14,4 +14,4 @@ Flyers can be deleted and added to the folder as needed.
 
 No other files need to be edited; changes are automatically detected.
 
-It will take a little bit of time before all changes update.
+It could take a little bit of time before all changes update.
